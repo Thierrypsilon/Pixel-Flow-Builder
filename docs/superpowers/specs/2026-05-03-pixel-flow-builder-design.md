@@ -96,6 +96,13 @@ export type ToolCategory =
   | "ascii"
   | "webgl";
 
+export type PreviewDrawFn = (
+  ctx: CanvasRenderingContext2D,
+  t: number,         // animation time in ms
+  w: number,         // canvas width
+  h: number          // canvas height
+) => void;
+
 export interface ToolDefinition {
   id: string;                                       // z.B. "pixel-flow"
   path: string;                                     // z.B. "/pixel-flow"
@@ -103,10 +110,24 @@ export interface ToolDefinition {
   description: string;                              // 1-Zeiler für Card
   category: ToolCategory;
   page: LazyExoticComponent<ComponentType>;         // lazy-loaded Page
-  preview: ComponentType;                           // eager Mini-Preview
-  tags?: string[];                                  // optional, z.B. ["camera"]
+  preview: PreviewDrawFn;                           // pure draw-fn (1:1 Replit-Übernahme)
+  gradient: string;                                 // Tailwind-Gradient für Card, z.B. "from-purple-500 to-fuchsia-500"
+  tags?: string[];                                  // optional, z.B. ["Video", "Kamera"]
+  popular?: boolean;                                // optional, hebt Card hervor
   expectedConsoleErrors?: RegExp[];                 // optional, vom Smoketest gefiltert
 }
+```
+
+### `src/tools/pixel-flow/preview.ts` (pure draw-fn, 1:1 aus alter `home.tsx` extrahiert)
+
+```ts
+import type { PreviewDrawFn } from "../types";
+
+const drawPreview: PreviewDrawFn = (ctx, t, w, h) => {
+  // … extracted body of the matching `draw(ctx, t, w, h)` from old home.tsx
+};
+
+export default drawPreview;
 ```
 
 ### `src/tools/pixel-flow/index.ts` (Beispiel pro Tool)
@@ -122,11 +143,15 @@ export const pixelFlow: ToolDefinition = {
   title: "Pixel Flow",
   description: "Echtzeit Kamera-Pixelkunst mit Dithering-Effekten",
   category: "visual",
+  gradient: "from-purple-500 to-fuchsia-500",
+  tags: ["Video", "Kamera"],
+  popular: true,
   page: lazy(() => import("./page")),
   preview,
-  tags: ["camera", "dithering"],
 };
 ```
+
+`src/components/home/tool-card.tsx` ist eine zentrale React-Komponente, die das Canvas-Setup + Animations-Loop macht und in jedem Frame `tool.preview(ctx, t, w, h)` aufruft. Die alte `ToolCard` aus Replit-`home.tsx:851–932` wird 1:1 dorthin extrahiert.
 
 ### `src/tools/registry.ts`
 
@@ -486,4 +511,23 @@ Detaillierter Plan kommt aus dem `writing-plans`-Skill. Grobe Phasen:
 
 ## 14. Offene Punkte
 
-Keine. Alle Brainstorming-Fragen beantwortet. Verifikationen aus 8.1 sind Teil der Implementierung, nicht des Designs.
+Keine. Alle Brainstorming-Fragen beantwortet.
+
+## 15. Verifikationsergebnisse (post-spec, 2026-05-03)
+
+Verifikation aus Sektion 8 wurde vorab durchgeführt — Befunde fließen in den Implementierungsplan ein:
+
+**Tatsächlich genutzte shadcn/ui-Komponenten (16 von 47):**
+`badge, button, card, dialog, input, label, separator, sheet, sidebar, skeleton, slider, switch, toast, toaster, toggle, tooltip`
+
+**Tatsächlich genutzte `@radix-ui/*` (9 von 27):**
+`react-dialog, react-label, react-separator, react-slider, react-slot, react-switch, react-toast, react-toggle, react-tooltip`
+
+**Genutzte Hooks (beide):** `use-mobile.tsx` (von ui/sidebar), `use-toast.ts` (von ui/toaster)
+
+**Komplett ungenutzt im Client (raus):**
+`framer-motion`, `react-hook-form`, `@hookform/resolvers`, `zod` (nur in toter `shared/schema.ts`), `@tanstack/react-query`, `next-themes`, `vaul`, `cmdk`, `recharts`, `embla-carousel-react`, `react-day-picker`, `react-icons`, `input-otp`, `react-resizable-panels`, `date-fns`, `nanoid`, alle 18 nicht-genutzten `@radix-ui/*`, alle Replit-Plugins, alle Backend/DB/Auth-Deps, `@assets`-Alias und `attached_assets/`.
+
+**Tool-Pages benötigen KEINE Import-Anpassungen:** Sie importieren via `@/`-Alias, der im neuen Setup direkt auf `src/` zeigt. Same relative paths.
+
+**Korrektur am Registry-Interface:** `preview` ist eine pure draw-Funktion `(ctx, t, w, h) => void` (siehe Section 5), nicht eine React-Component. Plus zusätzliche Felder `gradient` (required) und `popular` (optional), wie in Replit-`home.tsx`.
