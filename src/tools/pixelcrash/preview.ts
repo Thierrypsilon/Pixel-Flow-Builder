@@ -3,10 +3,15 @@ import type { PreviewDrawFn } from "../types";
 const drawPreview: PreviewDrawFn = (() => {
   let melt: Uint8ClampedArray | null = null;
   let t = 0;
-  const sc = document.createElement("canvas");
-  sc.width = 80; sc.height = 56;
-  const sx = sc.getContext("2d")!;
+  let sc: HTMLCanvasElement | null = null;
+  let sx: CanvasRenderingContext2D | null = null;
   return (ctx: CanvasRenderingContext2D, time: number, w: number, h: number) => {
+    if (!sc) {
+      sc = document.createElement("canvas");
+      sc.width = 80; sc.height = 56;
+      sx = sc.getContext("2d")!;
+    }
+    if (!sx) return;
     t = time;
     sx.fillStyle = `rgba(4,0,12,0.5)`; sx.fillRect(0,0,80,56);
     const blobs = [

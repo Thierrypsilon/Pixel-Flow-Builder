@@ -3,11 +3,16 @@ import type { PreviewDrawFn } from "../types";
 const drawPreview: PreviewDrawFn = (() => {
   const CHARS = " .:-=+*#%@";
   let t = 0;
-  const sc = document.createElement("canvas");
-  sc.width = 40; sc.height = 28;
-  const sx = sc.getContext("2d")!;
+  let sc: HTMLCanvasElement | null = null;
+  let sx: CanvasRenderingContext2D | null = null;
   return (ctx: CanvasRenderingContext2D, time: number, w: number, h: number) => {
+    if (!sc) {
+      sc = document.createElement("canvas");
+      sc.width = 40; sc.height = 28;
+      sx = sc.getContext("2d")!;
+    }
     t = time;
+    if (!sx) return;
     // Draw mini demo to srcCanvas
     sx.fillStyle = "#000010"; sx.fillRect(0, 0, 40, 28);
     const g = sx.createRadialGradient(20 + Math.sin(t)*8, 14 + Math.cos(t*0.7)*5, 0, 20, 14, 20);
