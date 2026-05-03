@@ -51,7 +51,7 @@ const drawPreview: PreviewDrawFn = (() => {
 - Push to `main` triggers `.github/workflows/deploy.yml`
 - Build output is `dist/`, base path is `/Pixel-Flow-Builder/`
 - SPA fallback: `dist/404.html` is a copy of `dist/index.html` (postbuild step in CI)
-- Pages is auto-enabled by `actions/configure-pages@v4` with `enablement: true` — no manual `Settings → Pages` click required
+- One-time manual step: enable Pages at `Settings → Pages → Source = "GitHub Actions"`. The workflow uses `actions/configure-pages@v4` with `enablement: true`, but the default `GITHUB_TOKEN` lacks the scope to actually flip the switch (the action returns "Resource not accessible by integration"). Once a human enables Pages, every subsequent workflow run is fully automatic.
 
 ## Out of scope
 
