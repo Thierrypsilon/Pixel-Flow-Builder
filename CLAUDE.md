@@ -51,7 +51,7 @@ const drawPreview: PreviewDrawFn = (() => {
 - Push to `main` triggers `.github/workflows/deploy.yml`
 - Build output is `dist/`, base path is `/Pixel-Flow-Builder/`
 - SPA fallback: `dist/404.html` is a copy of `dist/index.html` (postbuild step in CI)
-- GitHub-Pages source must be set to „GitHub Actions" in the repo settings (one-time manual step)
+- Pages is auto-enabled by `actions/configure-pages@v4` with `enablement: true` — no manual `Settings → Pages` click required
 
 ## Out of scope
 
