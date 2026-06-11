@@ -457,7 +457,8 @@ def main() -> int:
 
     report: dict = {
         "comfyui_path": str(comfyui) if comfyui else None,
-        "valid_comfyui": bool(comfyui and looks_like_comfyui(comfyui)),
+        "valid_comfyui": bool(comfyui and (looks_like_comfyui(comfyui)
+                                           or find_models_root(comfyui) is not None)),
         "vram": get_vram_info(),
         "custom_nodes": [],
         "models": {sub: [] for sub in MODEL_DIRS},
