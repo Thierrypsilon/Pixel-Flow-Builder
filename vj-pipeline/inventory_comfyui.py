@@ -65,6 +65,7 @@ WAN_REQUIREMENTS = {
 API_BASE = "http://127.0.0.1:8188"
 
 # Wahrscheinliche Installationspfade auf Windows + Unix fuer Auto-Detect.
+# Inkl. der Base-Directories der ComfyUI-Desktop-App (Electron).
 COMMON_PATHS = [
     r"C:\ComfyUI",
     r"C:\ComfyUI_windows_portable\ComfyUI",
@@ -72,9 +73,20 @@ COMMON_PATHS = [
     r"D:\ComfyUI_windows_portable\ComfyUI",
     r"D:\AI\ComfyUI",
     os.path.expanduser(r"~\ComfyUI"),
+    os.path.expanduser(r"~\Documents\ComfyUI"),          # Desktop-App Default-Base-Dir
+    os.path.expanduser(r"~\AppData\Local\Programs\ComfyUI"),
     os.path.expanduser(r"~/ComfyUI"),
+    os.path.expanduser(r"~/Documents/ComfyUI"),
     "/opt/ComfyUI",
     "/workspace/ComfyUI",
+]
+
+# Bei der Desktop-App liegt der eigentliche Server-Code oft unter resources/ComfyUI,
+# das Base-Dir (mit models/) wird beim Setup gewaehlt. Wir suchen models/ tolerant.
+DESKTOP_SUBPATHS = [
+    "models",
+    r"resources\ComfyUI\models",
+    "resources/ComfyUI/models",
 ]
 
 
@@ -197,8 +209,25 @@ def scan_custom_nodes(comfyui: Path) -> list[str]:
     return nodes
 
 
+def find_models_root(comfyui: Path) -> Path | None:
+    """Findet den models/-Ordner tolerant (auch fuer die Desktop-App)."""
+    for sub in DESKTOP_SUBPATHS:
+        cand = comfyui / sub
+        if cand.is_dir():
+            return cand
+    # Letzter Versuch: bis zu 2 Ebenen tief nach einem 'models'-Ordner suchen,
+    # der typische Unterordner enthaelt.
+    try:
+        for depth1 in comfyui.iterdir():
+            if depth1.is_dir() and depth1.name == "models" and (depth1 / "checkpoints").is_dir():
+                return depth1
+    except OSError:
+        pass
+    return None
+
+
 def scan_models(comfyui: Path) -> dict:
-    models_root = comfyui / "models"
+    models_root = find_models_root(comfyui) or (comfyui / "models")
     inventory: dict = {}
     for sub in MODEL_DIRS:
         d = models_root / sub
@@ -216,12 +245,16 @@ def scan_models(comfyui: Path) -> dict:
     return inventory
 
 
-def check_wan_models(model_inventory: dict) -> dict:
-    """Sucht ueber ALLE gescannten Modellordner nach den Wan-2.2-Bausteinen."""
+def check_wan_models(model_inventory: dict, api_models: dict | None = None) -> dict:
+    """Sucht ueber ALLE gescannten Modellordner + API-Modelle nach den Wan-2.2-Bausteinen."""
     all_names = []
     for files in model_inventory.values():
         for f in files:
             all_names.append(f["name"].lower())
+    if api_models:
+        for names in api_models.values():
+            for n in names:
+                all_names.append(n.lower())
 
     found: dict = {}
     for key, patterns in WAN_REQUIREMENTS.items():
@@ -234,6 +267,42 @@ def check_wan_models(model_inventory: dict) -> dict:
     return found
 
 
+# Welche Loader-Node welches Eingabefeld fuer Modelldateien hat.
+# So liest man die *tatsaechlich von ComfyUI gesehenen* Modelle aus -- unabhaengig
+# vom Speicherort (entscheidend fuer die Desktop-App mit eigenem Base-Dir).
+OBJECT_INFO_MODEL_FIELDS = {
+    "checkpoints":      [("CheckpointLoaderSimple", "ckpt_name")],
+    "diffusion_models": [("UNETLoader", "unet_name")],
+    "vae":              [("VAELoader", "vae_name")],
+    "text_encoders":    [("CLIPLoader", "clip_name"),
+                         ("DualCLIPLoader", "clip_name1"),
+                         ("DualCLIPLoader", "clip_name2")],
+    "clip_vision":      [("CLIPVisionLoader", "clip_name")],
+    "loras":            [("LoraLoader", "lora_name")],
+}
+
+
+def extract_models_from_object_info(obj: dict) -> dict:
+    """Zieht die verfuegbaren Modell-Dateinamen aus den Node-Definitionen."""
+    out: dict = {}
+    for category, sources in OBJECT_INFO_MODEL_FIELDS.items():
+        names: list[str] = []
+        for node_type, field in sources:
+            node = obj.get(node_type)
+            if not isinstance(node, dict):
+                continue
+            req = node.get("input", {}).get("required", {})
+            opt = node.get("input", {}).get("optional", {})
+            spec = req.get(field) or opt.get(field)
+            # spec ist typischerweise [[ "datei1", "datei2", ... ], {meta}]
+            if isinstance(spec, list) and spec and isinstance(spec[0], list):
+                for n in spec[0]:
+                    if isinstance(n, str) and n not in names:
+                        names.append(n)
+        out[category] = sorted(names)
+    return out
+
+
 def query_running_server() -> dict:
     info: dict = {"running": False}
     stats = http_get_json(f"{API_BASE}/system_stats")
@@ -243,6 +312,7 @@ def query_running_server() -> dict:
         obj = http_get_json(f"{API_BASE}/object_info")
         if isinstance(obj, dict):
             info["node_count"] = len(obj)
+            info["api_models"] = extract_models_from_object_info(obj)
             # Pruefe gezielt auf die fuer Wan/I2V relevanten Node-Typen
             wan_relevant = [
                 "WanImageToVideo", "WanVaeLoader", "UNETLoader", "CLIPLoader",
@@ -352,6 +422,13 @@ def print_report(report: dict) -> None:
         p(f"  - erreichbar auf {API_BASE}  ({srv.get('node_count', '?')} Node-Typen)")
         for n, present in srv.get("relevant_nodes_present", {}).items():
             p(f"      {'[OK]   ' if present else '[fehlt]'} {n}")
+        api_models = srv.get("api_models")
+        if api_models:
+            p("\n  [Von ComfyUI live gesehene Modelle (via /object_info)]")
+            for cat, names in api_models.items():
+                p(f"    {cat}/  ({len(names)})")
+                for n in names:
+                    p(f"        {n}")
     else:
         p(f"  - kein Server auf {API_BASE} (fuer Batch-Runner spaeter starten)")
 
@@ -387,7 +464,9 @@ def main() -> int:
     if comfyui and comfyui.is_dir():
         report["custom_nodes"] = scan_custom_nodes(comfyui)
         report["models"] = scan_models(comfyui)
-        report["wan_check"] = check_wan_models(report["models"])
+
+    api_models = report["server"].get("api_models")
+    report["wan_check"] = check_wan_models(report["models"], api_models)
 
     json_out = args.json_out or str(Path(__file__).resolve().parent / "inventory_report.json")
     report["json_out"] = json_out
