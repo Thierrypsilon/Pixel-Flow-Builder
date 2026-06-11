@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.pyc
+
+# Generated at runtime on the VJ machine — not source
+inventory_report.json
+
+# Pipeline outputs (videos can be huge; never commit)
+output/
