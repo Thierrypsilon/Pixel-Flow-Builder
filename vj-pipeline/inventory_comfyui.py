@@ -137,8 +137,11 @@ def detect_comfyui_path(cli_path: str | None) -> Path | None:
 
     # 4) bekannte Standardorte
     for candidate in COMMON_PATHS:
-        p = Path(candidate).expanduser()
-        if looks_like_comfyui(p):
+        try:
+            p = Path(candidate).expanduser()
+        except (RuntimeError, OSError):
+            continue
+        if looks_like_comfyui(p) or find_models_root(p) is not None:
             return p
 
     return None
@@ -363,11 +366,12 @@ def print_report(report: dict) -> None:
     p(line)
 
     # Pfad
-    p(f"\n[ComfyUI-Root] {report['comfyui_path'] or 'NICHT GEFUNDEN'}")
+    p(f"\n[ComfyUI-Root] {report['comfyui_path'] or 'NICHT GEFUNDEN (Dateisystem-Scan uebersprungen)'}")
     if not report["comfyui_path"]:
-        p("  -> Pfad nicht erkannt. Bitte mit --comfyui-path \"C:\\\\Pfad\\\\zu\\\\ComfyUI\" starten.")
-        return
-    if not report["valid_comfyui"]:
+        p("  -> Pfad nicht erkannt. Fuer den Dateisystem-Scan mit --comfyui-path starten,")
+        p("     z.B. --comfyui-path \"C:\\\\Users\\\\<du>\\\\Documents\\\\ComfyUI\".")
+        p("     (VRAM + laufender Server werden trotzdem unten ausgewertet.)")
+    elif not report["valid_comfyui"]:
         p("  -> WARNUNG: main.py oder models/ fehlen. Ist das wirklich das ComfyUI-Root?")
 
     # VRAM
