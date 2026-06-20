@@ -1,0 +1,13 @@
+# Floating Portrait -- eine Zeile pro Variante.
+# Leerzeilen und Zeilen mit '#' werden ignoriert.
+# Diese Zeile ersetzt komplett den positiven Prompt von portrait_gen.json (Node 6).
+# Stil-Anker bleiben gleich: freigestellter Kopf, editorial, neutraler grau-blauer Studio-Look.
+
+editorial fashion portrait of a striking androgynous model, sharp cheekbones, sleek wet-look dark hair swept to one side, slightly turned three-quarter pose, soft diffused studio light, neutral grey-blue background, 85mm, magazine cover aesthetic, detailed skin
+editorial beauty portrait of a young woman with voluminous curly red hair catching the light, freckles, calm gaze, three-quarter turn, soft rim light, neutral grey-blue studio background, high fashion, fine skin detail
+editorial portrait of an elegant older man, silver swept-back hair, weathered distinguished face, slight head tilt, dramatic soft side light, neutral grey-blue background, timeless fashion photography
+editorial fashion portrait of a model with long platinum-blonde hair drifting as if in a breeze, porcelain skin, serene expression, slight turn, soft studio light, neutral grey-blue background, dreamy high-end look
+editorial beauty portrait of a dark-skinned woman with a sculptural afro, golden soft light grazing the cheek, poised three-quarter pose, neutral grey-blue studio background, luxury magazine aesthetic, crisp detail
+editorial portrait of a young man with tousled wavy brown hair, soft jawline, introspective look, slight head turn, gentle window light, neutral grey-blue background, fashion editorial, natural skin texture
+editorial fashion portrait of a woman with a sleek black bob and bold brows, confident gaze, slight turn, soft beauty light, neutral grey-blue studio background, clean high-end aesthetic
+editorial beauty portrait of a model with flowing auburn hair and delicate features, dreamy half-light, three-quarter pose, neutral grey-blue background, soft cinematic grade, fine detail
