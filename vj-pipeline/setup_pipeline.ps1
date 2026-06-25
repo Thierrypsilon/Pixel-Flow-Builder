@@ -106,7 +106,7 @@ if (Test-Path $nodePath) {
 }
 elseif (Get-Command git -ErrorAction SilentlyContinue) {
     try {
-        & git clone "https://github.com/john-rocky/ComfyUI-Inspyrenet-Rembg.git" $nodePath
+        & git clone "https://github.com/john-mnz/ComfyUI-Inspyrenet-Rembg.git" $nodePath
         Write-Ok "Node geklont nach $nodePath"
         Write-Warn2 "Dependency 'transparent-background' wird beim naechsten ComfyUI-Start (bzw. via Manager) installiert."
     }
