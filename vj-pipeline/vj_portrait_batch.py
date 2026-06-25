@@ -201,6 +201,79 @@ class ComfyClient:
 
 
 # ---------------------------------------------------------------------------
+# Preflight: prueft VOR dem Rendern, ob ComfyUI alle Nodes + Modelle kennt
+# ---------------------------------------------------------------------------
+
+# Loader-Node -> Eingabefeld mit dem Modell-Dateinamen (fuer die Modellpruefung)
+LOADER_FIELDS = {
+    "CheckpointLoaderSimple": "ckpt_name",
+    "UNETLoader": "unet_name",
+    "VAELoader": "vae_name",
+    "CLIPLoader": "clip_name",
+}
+
+# Hinweise, woher ein fehlender Node kommt
+NODE_HINTS = {
+    "InspyrenetRembg": "Custom Node 'ComfyUI-Inspyrenet-Rembg' -> via ComfyUI-Manager installieren + Restart",
+    "Wan22ImageToVideoLatent": "Core-Node (aktuelles ComfyUI noetig) -> ComfyUI updaten",
+    "VHS_VideoCombine": "Custom Node 'ComfyUI-VideoHelperSuite' -> sollte vorhanden sein",
+    "ModelSamplingSD3": "Core-Node -> ComfyUI updaten falls fehlend",
+}
+
+
+def preflight(client: "ComfyClient", graphs: list[tuple[str, dict]]) -> int:
+    """0 == alles ok. Prueft Node-Existenz und Modell-Namen gegen /object_info."""
+    print("\n== Preflight (ComfyUI /object_info) ==")
+    try:
+        obj = client._get_json("/object_info")
+    except Exception as exc:
+        print(f"  [!] Konnte /object_info nicht laden: {exc}")
+        print("      -> mit --skip-preflight ueberspringen, falls noetig.")
+        return 4
+    if not isinstance(obj, dict):
+        print("  [!] Unerwartete /object_info-Antwort.")
+        return 4
+
+    missing_nodes: list[str] = []
+    model_problems: list[str] = []
+
+    for fname, graph in graphs:
+        for node_id, node in graph.items():
+            ct = node.get("class_type")
+            if ct and ct not in obj:
+                if ct not in missing_nodes:
+                    missing_nodes.append(ct)
+                continue
+            # Modell-Datei pruefen, wo moeglich
+            field = LOADER_FIELDS.get(ct)
+            if field:
+                want = node.get("inputs", {}).get(field)
+                spec = obj.get(ct, {}).get("input", {}).get("required", {}).get(field)
+                options = spec[0] if isinstance(spec, list) and spec and isinstance(spec[0], list) else []
+                if want and options and want not in options:
+                    near = [o for o in options if want.split(".")[0][:10].lower() in o.lower()]
+                    hint = f"  ähnliche: {near[:3]}" if near else f"  verfügbar: {options[:6]}"
+                    model_problems.append(f"{fname} [{node_id}/{ct}] '{want}' nicht gefunden.{hint}")
+
+    if missing_nodes:
+        print("  [FEHLT] Diese Node-Typen kennt dein ComfyUI nicht:")
+        for n in missing_nodes:
+            print(f"      - {n}   ({NODE_HINTS.get(n, 'Custom Node installieren / ComfyUI updaten')})")
+    if model_problems:
+        print("  [MODELL] Pfad-/Namensabweichungen:")
+        for m in model_problems:
+            print(f"      - {m}")
+
+    if missing_nodes or model_problems:
+        print("\n  -> Bitte oben Genanntes beheben, dann erneut starten.")
+        print("     (Schick mir diese Ausgabe, dann passe ich die Workflow-JSONs an.)")
+        return 5
+
+    print("  [OK] Alle Nodes vorhanden, alle Modelle gefunden.")
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # State / Resume
 # ---------------------------------------------------------------------------
 
@@ -411,6 +484,8 @@ def main() -> int:
     ap.add_argument("--no-resume", action="store_true", help="Alles neu rendern, State ignorieren")
     ap.add_argument("--limit", type=int, default=0, help="Nur die ersten N Prompts verarbeiten")
     ap.add_argument("--timeout", type=float, default=1800.0, help="Timeout pro Job in Sekunden")
+    ap.add_argument("--skip-preflight", action="store_true",
+                    help="Node-/Modell-Pruefung vor dem Rendern ueberspringen")
     args = ap.parse_args()
 
     # Workflows + Prompts laden
@@ -451,6 +526,12 @@ def main() -> int:
     if not ffmpeg_available():
         print("[Hinweis] FFmpeg nicht im PATH gefunden -- Rohvideos werden erzeugt, "
               "aber Loop/HAP wird uebersprungen.")
+
+    # Preflight: Nodes + Modelle gegen /object_info pruefen, bevor Credits/Zeit fliessen
+    if not args.skip_preflight:
+        rc = preflight(client, [("portrait_gen.json", portrait_graph), ("wan_i2v.json", wan_graph)])
+        if rc != 0:
+            return rc
 
     print(f"== Floating Portrait Batch ==")
     print(f"   Server : {args.server}")
