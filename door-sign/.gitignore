@@ -1,0 +1,5 @@
+output/
+fonts/*.ttf
+fonts/*.otf
+assets/*.png
+!assets/.gitkeep
