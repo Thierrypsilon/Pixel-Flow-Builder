@@ -23,19 +23,29 @@ from PIL import Image, ImageDraw, ImageFont, ImageChops
 BRAND = "BIKECENTER MEYER"
 ADDRESS = "Malmedyer Str. 66 · 4780 Sankt Vith"
 
-MARKER_TEXT = "— HEUTE GESCHLOSSEN · AUJOURD'HUI FERMÉ —"
+MARKER_TEXT = "— AUSNAHMSWEISE GESCHLOSSEN · FERMETURE EXCEPTIONNELLE —"
 
 MESSAGE_HEADLINE_DE = "GESCHLOSSEN"
 MESSAGE_HEADLINE_FR = "FERMÉ"
 
-MESSAGE_SUB_DE = "Heute den ganzen Tag geschlossen"
-MESSAGE_SUB_FR = "Fermé toute la journée"
+# Eine Zeile pro Schließtag. Beliebig viele Einträge möglich.
+CLOSURE_ENTRIES = [
+    {
+        "day_de": "MONTAG · 20. JULI 2026",
+        "day_fr": "Lundi 20 juillet 2026",
+        "detail_de": "Nachmittags ab 12:00 Uhr geschlossen",
+        "detail_fr": "Fermé l'après-midi à partir de 12h00",
+    },
+    {
+        "day_de": "DIENSTAG · 21. JULI 2026",
+        "day_fr": "Mardi 21 juillet 2026",
+        "detail_de": "Nationalfeiertag · ganztägig geschlossen",
+        "detail_fr": "Jour férié national · fermé toute la journée",
+    },
+]
 
-REASON_DE = "Wir sind auf einer Ausstellung."
-REASON_FR = "Nous sommes présents à un salon."
-
-DATE_DE = "MONTAG · 6. JULI 2026"
-DATE_FR = "LUNDI · 6 JUILLET 2026"
+REASON_DE = "Wir verlängern den Nationalfeiertag um einen freien Nachmittag."
+REASON_FR = "Nous prolongeons le jour férié national d'un après-midi de congé."
 
 THANKS_DE = "Danke für Ihr Verständnis"
 THANKS_FR = "Merci de votre compréhension"
@@ -93,28 +103,27 @@ GAP_HEADLINE_BAND = 34
 BAND_FONT_SIZE = 70
 BAND_TRACKING = 0
 BAND_PAD_Y = 26
-GAP_BAND_MESSAGE = 40
+GAP_BAND_SCHEDULE = 40
 
-MESSAGE_DE_SIZE = 32
-MESSAGE_FR_SIZE = 26
-MESSAGE_LINE_GAP = 8
-GAP_MESSAGE_REASON = 26
-
-REASON_DE_SIZE = 26
-REASON_FR_SIZE = 21
-REASON_LINE_GAP = 6
-GAP_REASON_DATE = 40
-
-DATE_BOX_PAD_X = 34
-DATE_BOX_PAD_Y = 20
-DATE_DE_SIZE = 24
-DATE_DE_TRACKING = 1.5
-DATE_FR_SIZE = 16
-DATE_LINE_GAP = 6
+SCHEDULE_PAD_X = 34
+SCHEDULE_PAD_Y = 26
+SCHEDULE_DAY_SIZE = 23
+SCHEDULE_DAY_TRACKING = 1.6
+SCHEDULE_DAYFR_SIZE = 17
+SCHEDULE_DETAIL_SIZE = 19
+SCHEDULE_DETAILFR_SIZE = 15
+SCHEDULE_LINE_GAP = 5
+SCHEDULE_ROW_GAP = 10
+SCHEDULE_ENTRY_GAP = 24
 DATE_TICK_W = 46
 DATE_TICK_H = 10
 DATE_BORDER_THICK = 2
-GAP_DATE_ICON = 40
+GAP_SCHEDULE_REASON = 34
+
+REASON_DE_SIZE = 22
+REASON_FR_SIZE = 18
+REASON_LINE_GAP = 6
+GAP_REASON_ICON = 40
 
 ICON_WIDTH = 190
 GAP_ICON_FOOTER = 40
@@ -218,6 +227,15 @@ def fit_font_size(draw, text, font_path, max_width, start_size, tracking=0, min_
     return min_size
 
 
+def fit_uniform_size(draw, texts, font_path, max_width, start_size, tracking=0):
+    """Wie fit_font_size, aber eine gemeinsame Größe für mehrere Texte (z.B. je
+    eine Zeile pro Schließtag), damit alle Zeilen visuell konsistent bleiben."""
+    size = start_size
+    for text in texts:
+        size = min(size, fit_font_size(draw, text, font_path, max_width, size, tracking=tracking))
+    return size
+
+
 # ============================================================
 # Bike-Icon: Weiß -> Alpha über Luminanz, Umfärben, Resize, zentriertes Einfügen
 # ============================================================
@@ -314,21 +332,45 @@ def build_blocks(draw, canvas, ss_w, scale, ss, content_scale, gap_mult, font_pa
 
         return {"height": height, "gap_after": GAP(gap_after_base), "draw": _draw}
 
-    def make_date_block(gap_after_base):
-        tracking_de = U(DATE_DE_TRACKING)
-        pad_x = U(DATE_BOX_PAD_X)
-        pad_y = U(DATE_BOX_PAD_Y)
+    def make_schedule_block(entries, gap_after_base):
+        pad_x = U(SCHEDULE_PAD_X)
+        pad_y = U(SCHEDULE_PAD_Y)
+        line_gap = U(SCHEDULE_LINE_GAP)
+        row_gap = U(SCHEDULE_ROW_GAP)
+        entry_gap = U(SCHEDULE_ENTRY_GAP)
         inner_max_w = avail_w - 2 * pad_x
-        size_de = fit_font_size(draw, DATE_DE, font_paths["mono_bold"], inner_max_w, U(DATE_DE_SIZE), tracking=tracking_de)
-        size_fr = fit_font_size(draw, DATE_FR, font_paths["mono_regular"], inner_max_w, U(DATE_FR_SIZE))
-        font_de = font_at(font_paths["mono_bold"], size_de)
-        font_fr = font_at(font_paths["mono_regular"], size_fr)
-        m_de = tracked_text_metrics(draw, DATE_DE, font_de, tracking_de)
-        m_fr = tracked_text_metrics(draw, DATE_FR, font_fr, 0)
-        line_gap = U(DATE_LINE_GAP)
-        inner_h = m_de["height"] + line_gap + m_fr["height"]
+        day_tracking = U(SCHEDULE_DAY_TRACKING)
+
+        day_font_size = fit_uniform_size(draw, [e["day_de"] for e in entries], font_paths["mono_bold"],
+                                          inner_max_w, U(SCHEDULE_DAY_SIZE), tracking=day_tracking)
+        dayfr_font_size = fit_uniform_size(draw, [e["day_fr"] for e in entries], font_paths["mono_regular"],
+                                            inner_max_w, U(SCHEDULE_DAYFR_SIZE))
+        detail_font_size = fit_uniform_size(draw, [e["detail_de"] for e in entries], font_paths["mono_regular"],
+                                             inner_max_w, U(SCHEDULE_DETAIL_SIZE))
+        detailfr_font_size = fit_uniform_size(draw, [e["detail_fr"] for e in entries], font_paths["mono_regular"],
+                                               inner_max_w, U(SCHEDULE_DETAILFR_SIZE))
+
+        day_font = font_at(font_paths["mono_bold"], day_font_size)
+        dayfr_font = font_at(font_paths["mono_regular"], dayfr_font_size)
+        detail_font = font_at(font_paths["mono_regular"], detail_font_size)
+        detailfr_font = font_at(font_paths["mono_regular"], detailfr_font_size)
+
+        rows = []
+        for e in entries:
+            day_m = tracked_text_metrics(draw, e["day_de"], day_font, day_tracking)
+            dayfr_m = tracked_text_metrics(draw, e["day_fr"], dayfr_font, 0)
+            detail_m = tracked_text_metrics(draw, e["detail_de"], detail_font, 0)
+            detailfr_m = tracked_text_metrics(draw, e["detail_fr"], detailfr_font, 0)
+            row_height = (day_m["height"] + line_gap + dayfr_m["height"] + row_gap
+                          + detail_m["height"] + line_gap + detailfr_m["height"])
+            rows.append({
+                "entry": e, "day_m": day_m, "dayfr_m": dayfr_m, "detail_m": detail_m, "detailfr_m": detailfr_m,
+                "height": row_height,
+            })
+
+        inner_h = sum(r["height"] for r in rows) + entry_gap * max(0, len(rows) - 1)
         box_h = inner_h + 2 * pad_y
-        box_w = max(m_de["width"], m_fr["width"]) + 2 * pad_x
+        box_w = avail_w
         tick_w = U(DATE_TICK_W)
         tick_h = U(DATE_TICK_H)
         border = max(1, U(DATE_BORDER_THICK))
@@ -341,10 +383,23 @@ def build_blocks(draw, canvas, ss_w, scale, ss, content_scale, gap_mult, font_pa
             draw.rectangle([box_left, box_top, box_right, box_top + box_h],
                             outline=HAIRLINE, width=int(round(border)))
             draw.rectangle([cx - tick_w / 2, box_top - tick_h / 2, cx + tick_w / 2, box_top + tick_h / 2], fill=ORANGE)
-            inner_top = box_top + pad_y
-            draw_text_tracked(draw, cx, inner_top, DATE_DE, font_de, INK, tracking=tracking_de, align="center")
-            draw_text_tracked(draw, cx, inner_top + m_de["height"] + line_gap, DATE_FR, font_fr, INK_SOFT,
-                               tracking=0, align="center")
+
+            y = box_top + pad_y
+            for i, r in enumerate(rows):
+                e = r["entry"]
+                draw_text_tracked(draw, cx, y, e["day_de"], day_font, INK, tracking=day_tracking, align="center")
+                y += r["day_m"]["height"] + line_gap
+                draw_text_tracked(draw, cx, y, e["day_fr"], dayfr_font, INK_SOFT, tracking=0, align="center")
+                y += r["dayfr_m"]["height"] + row_gap
+                draw_text_tracked(draw, cx, y, e["detail_de"], detail_font, INK, tracking=0, align="center")
+                y += r["detail_m"]["height"] + line_gap
+                draw_text_tracked(draw, cx, y, e["detail_fr"], detailfr_font, INK_SOFT, tracking=0, align="center")
+                y += r["detailfr_m"]["height"]
+                if i < len(rows) - 1:
+                    mid_y = y + entry_gap / 2
+                    draw.line([(box_left + pad_x, mid_y), (box_right - pad_x, mid_y)],
+                               fill=HAIRLINE, width=max(1, int(round(border / 2))))
+                    y += entry_gap
 
         return {"height": total_h, "gap_after": GAP(gap_after_base), "draw": _draw}
 
@@ -363,12 +418,10 @@ def build_blocks(draw, canvas, ss_w, scale, ss, content_scale, gap_mult, font_pa
         make_text_block(BRAND, font_paths["shoulders_bold"], BRAND_SIZE, BRAND_TRACKING, INK, GAP_BRAND_HAIRLINE),
         make_hairline_block(HAIRLINE_WIDTH, HAIRLINE_THICK, GAP_HAIRLINE_HEADLINE),
         make_text_block(MESSAGE_HEADLINE_DE, font_paths["shoulders_bold"], HEADLINE_SIZE, HEADLINE_TRACKING, INK, GAP_HEADLINE_BAND),
-        make_band_block(MESSAGE_HEADLINE_FR, GAP_BAND_MESSAGE),
-        make_two_line_block(MESSAGE_SUB_DE, MESSAGE_DE_SIZE, INK, MESSAGE_SUB_FR, MESSAGE_FR_SIZE, INK_SOFT,
-                             MESSAGE_LINE_GAP, GAP_MESSAGE_REASON, font_paths["mono_regular"]),
+        make_band_block(MESSAGE_HEADLINE_FR, GAP_BAND_SCHEDULE),
+        make_schedule_block(CLOSURE_ENTRIES, GAP_SCHEDULE_REASON),
         make_two_line_block(REASON_DE, REASON_DE_SIZE, INK_SOFT, REASON_FR, REASON_FR_SIZE, INK_SOFT,
-                             REASON_LINE_GAP, GAP_REASON_DATE, font_paths["mono_regular"]),
-        make_date_block(GAP_DATE_ICON),
+                             REASON_LINE_GAP, GAP_REASON_ICON, font_paths["mono_regular"]),
         make_icon_block(GAP_ICON_FOOTER),
         make_two_line_block(ADDRESS, FOOTER_ADDR_SIZE, INK_SOFT,
                              f"{THANKS_DE} · {THANKS_FR}", FOOTER_THANKS_SIZE, INK_SOFT,

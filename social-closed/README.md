@@ -1,7 +1,8 @@
-# Social-Media-Grafiken „HEUTE GESCHLOSSEN" — Bikecenter Meyer
+# Social-Media-Grafiken „GESCHLOSSEN" — Bikecenter Meyer
 
 Erzeugt `ig_feed.png` (1080×1350), `ig_story.png` (1080×1920), `fb_square.png`
-(1080×1080) sowie `social_geschlossen.pdf` im Design des bestehenden Türschilds.
+(1080×1080) sowie `social_geschlossen.pdf`, im selben Design wie das Türschild
+(`../door-sign/`). Unterstützt beliebig viele Schließtage über `CLOSURE_ENTRIES`.
 
 ## Setup
 
@@ -18,5 +19,6 @@ Ergebnisse landen in `output/`.
 
 ## Nächsten Schließtag eintragen
 
-Alle Texte, Datum und Grund stehen als Konstanten ganz oben in `make_social.py`
-(`MESSAGE_HEADLINE_DE`, `REASON_DE`/`REASON_FR`, `DATE_DE`/`DATE_FR`, …).
+`CLOSURE_ENTRIES` in `make_social.py` ist eine Liste — pro Schließtag ein
+Eintrag mit `day_de`/`day_fr` (Datum) und `detail_de`/`detail_fr` (Uhrzeit/Grund).
+Beliebig viele Einträge möglich, das Layout passt sich automatisch an.
