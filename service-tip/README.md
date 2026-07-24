@@ -1,9 +1,13 @@
 # Service-Tipp-Karte — Bikecenter Meyer
 
-A5-Handzettel zum Mitgeben (`service_card.png` + `service_card.pdf`,
-1748×2480 px @ 300 dpi), im selben Design wie die übrigen Schilder. Bittet
+Handzettel zum Mitgeben, im selben Design wie die übrigen Schilder. Bittet
 Kund:innen freundlich, ihr Rad in der ruhigen Jahreszeit (Herbst/Winter/Frühjahr)
 statt im Hochsommer zum Service zu bringen.
+
+Erzeugt in einem Durchlauf:
+- `service_card.png` / `.pdf` — einzelne, schmale Hochformat-Karte (ca. 99×210 mm)
+- `service_card_3up_a4.png` / `.pdf` — **A4 quer mit 3 Karten nebeneinander**,
+  inkl. gestrichelter Schnittlinien und Eck-Marken zum Ausschneiden
 
 ## Setup
 
@@ -15,7 +19,8 @@ statt im Hochsommer zum Service zu bringen.
 2. `pip install Pillow`
 3. `python make_service_card.py`
 
-Ergebnis landet in `output/`. Kein Icon nötig.
+Ergebnis landet in `output/`. Kein Icon nötig. Anzahl Karten pro Blatt über
+`COPIES_PER_SHEET` einstellbar.
 
 ## Texte anpassen
 

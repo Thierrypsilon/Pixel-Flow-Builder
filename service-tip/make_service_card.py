@@ -51,9 +51,14 @@ THANKS_FR = "Merci — votre vélo aura tout le soin qu'il mérite"
 FONT_DIR = "./fonts"
 OUTPUT_DIR = "./output"
 
-# A5 bei 300 dpi (148 x 210 mm)
-PAGE_W = 1748
-PAGE_H = 2480
+# Einzelkarte: schmales Hochformat, 3 passen nebeneinander auf A4-Querformat.
+# A4 quer @ 300 dpi = 3508 x 2480 px, geteilt durch 3 -> Karte 1169 x 2480 px
+# (ca. 99 x 210 mm).
+COPIES_PER_SHEET = 3
+SHEET_W = 3508   # A4 quer, Breite @ 300 dpi
+SHEET_H = 2480   # A4 quer, Höhe @ 300 dpi
+CARD_W = SHEET_W // COPIES_PER_SHEET   # 1169
+CARD_H = SHEET_H
 
 SS = 2  # Supersampling-Faktor (Rendern in 2x, dann LANCZOS-Downscale)
 
@@ -466,21 +471,58 @@ def render_card(w, h, font_paths):
     return canvas.convert("RGB").resize((w, h), Image.LANCZOS)
 
 
+def compose_sheet(card, copies, sheet_w, sheet_h):
+    """Setzt `copies` Karten nebeneinander auf ein A4-Querformat-Blatt und
+    zeichnet dünne Schnittlinien + Eck-Marken zwischen den Karten."""
+    sheet = Image.new("RGB", (sheet_w, sheet_h), PAPER)
+    draw = ImageDraw.Draw(sheet)
+    card_w = card.width
+
+    for i in range(copies):
+        sheet.paste(card, (i * card_w, 0))
+
+    # gestrichelte Schnittlinien an den Nahtstellen
+    dash, gap = 22, 16
+    for i in range(1, copies):
+        x = i * card_w
+        y = 0
+        while y < sheet_h:
+            draw.line([(x, y), (x, min(y + dash, sheet_h))], fill=HAIRLINE, width=2)
+            y += dash + gap
+
+    # kurze Schnittmarken (Ink) oben und unten an jeder Naht
+    tick = 34
+    for i in range(1, copies):
+        x = i * card_w
+        draw.line([(x, 0), (x, tick)], fill=INK, width=2)
+        draw.line([(x, sheet_h - tick), (x, sheet_h)], fill=INK, width=2)
+
+    return sheet
+
+
 def main():
     check_assets()
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     font_paths = {key: os.path.join(FONT_DIR, filename) for key, filename in FONT_FILES.items()}
-    img = render_card(PAGE_W, PAGE_H, font_paths)
 
-    png_path = os.path.join(OUTPUT_DIR, "service_card.png")
-    img.save(png_path, "PNG", dpi=(300, 300))
-    pdf_path = os.path.join(OUTPUT_DIR, "service_card.pdf")
-    img.save(pdf_path, "PDF", resolution=300.0)
+    card = render_card(CARD_W, CARD_H, font_paths)
+    card_png = os.path.join(OUTPUT_DIR, "service_card.png")
+    card.save(card_png, "PNG", dpi=(300, 300))
+    card_pdf = os.path.join(OUTPUT_DIR, "service_card.pdf")
+    card.save(card_pdf, "PDF", resolution=300.0)
+
+    sheet = compose_sheet(card, COPIES_PER_SHEET, SHEET_W, SHEET_H)
+    sheet_png = os.path.join(OUTPUT_DIR, "service_card_3up_a4.png")
+    sheet.save(sheet_png, "PNG", dpi=(300, 300))
+    sheet_pdf = os.path.join(OUTPUT_DIR, "service_card_3up_a4.pdf")
+    sheet.save(sheet_pdf, "PDF", resolution=300.0)
 
     print("\nFertig! Erzeugte Dateien:\n")
-    print(f"  {png_path}  ({img.size[0]} x {img.size[1]} px, 300 dpi, A5)")
-    print(f"  {pdf_path}  (1 Seite, A5, druckfertig)")
+    print(f"  {card_png}  ({card.size[0]} x {card.size[1]} px, 300 dpi, Einzelkarte)")
+    print(f"  {card_pdf}  (1 Karte)")
+    print(f"  {sheet_png}  ({sheet.size[0]} x {sheet.size[1]} px, 300 dpi, A4 quer)")
+    print(f"  {sheet_pdf}  ({COPIES_PER_SHEET} Karten auf A4 quer, zum Ausschneiden)")
 
 
 if __name__ == "__main__":
