@@ -49,6 +49,7 @@ REASON_FR = "Nous reprenons volontiers réparations et commandes à notre retour
 THANKS_DE = "Danke für Ihr Verständnis"
 THANKS_FR = "Merci de votre compréhension"
 
+SHOW_ICON = False  # Fahrrad-Piktogramm anzeigen? (False = ohne Icon)
 BIKE_ICON_PATH = "./assets/bike-icon.png"
 FONT_DIR = "./fonts"
 OUTPUT_DIR = "./output"
@@ -140,7 +141,7 @@ def check_assets():
         path = os.path.join(FONT_DIR, filename)
         if not os.path.isfile(path):
             missing.append(path)
-    if not os.path.isfile(BIKE_ICON_PATH):
+    if SHOW_ICON and not os.path.isfile(BIKE_ICON_PATH):
         missing.append(BIKE_ICON_PATH)
     if missing:
         listed = "\n".join(f"  - {p}" for p in missing)
@@ -419,11 +420,14 @@ def build_blocks(draw, canvas, ss_w, scale, ss, content_scale, gap_mult, font_pa
         make_schedule_block(CLOSURE_ENTRIES, GAP_SCHEDULE_REASON),
         make_two_line_block(REASON_DE, REASON_DE_SIZE, INK_SOFT, REASON_FR, REASON_FR_SIZE, INK_SOFT,
                              REASON_LINE_GAP, GAP_REASON_ICON, font_paths["mono_regular"]),
-        make_icon_block(GAP_ICON_FOOTER),
-        make_two_line_block(ADDRESS, FOOTER_ADDR_SIZE, INK_SOFT,
-                             f"{THANKS_DE} · {THANKS_FR}", FOOTER_THANKS_SIZE, INK_SOFT,
-                             FOOTER_LINE_GAP, 0, font_paths["mono_regular"]),
     ]
+    if SHOW_ICON:
+        blocks.append(make_icon_block(GAP_ICON_FOOTER))
+    blocks.append(
+        make_two_line_block(ADDRESS, FOOTER_ADDR_SIZE, INK_SOFT,
+                            f"{THANKS_DE} · {THANKS_FR}", FOOTER_THANKS_SIZE, INK_SOFT,
+                            FOOTER_LINE_GAP, 0, font_paths["mono_regular"])
+    )
     return blocks
 
 
@@ -497,7 +501,7 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     font_paths = {key: os.path.join(FONT_DIR, filename) for key, filename in FONT_FILES.items()}
-    bike_icon_master = load_bike_icon(BIKE_ICON_PATH, INK)
+    bike_icon_master = load_bike_icon(BIKE_ICON_PATH, INK) if SHOW_ICON else None
 
     img = render_door_sign(PAGE_W, PAGE_H, font_paths, bike_icon_master)
 
