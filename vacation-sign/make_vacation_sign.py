@@ -60,7 +60,11 @@ PAGE_H = 3508
 
 SS = 2  # Supersampling-Faktor (Rendern in 2x, dann LANCZOS-Downscale)
 
-# Farben (exakt)
+# Schwarz-Weiß-Ausgabe für S/W-Drucker: weißer Hintergrund, Akzent in Schwarz
+# statt Orange (Band wird schwarz mit weißer Schrift). Auf False für Farbdruck.
+MONOCHROME = True
+
+# Farben (Farb-Variante)
 PAPER = (243, 240, 233)
 PAPER_DK = (233, 229, 220)
 INK = (26, 26, 24)
@@ -68,6 +72,13 @@ INK_SOFT = (74, 72, 68)
 ORANGE = (232, 93, 24)
 ORANGE_DK = (196, 74, 14)
 HAIRLINE = (200, 195, 185)
+
+if MONOCHROME:
+    PAPER = (255, 255, 255)      # reiner weißer Hintergrund (spart Toner)
+    PAPER_DK = (255, 255, 255)
+    ORANGE = (26, 26, 24)        # Akzent/Band -> Schwarz
+    ORANGE_DK = (26, 26, 24)
+    HAIRLINE = (150, 150, 150)   # etwas kräftiger, damit Linien sicher drucken
 
 FONT_FILES = {
     "shoulders_bold": "BigShoulders-Bold.ttf",

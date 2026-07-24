@@ -52,17 +52,21 @@ FONT_DIR = "./fonts"
 OUTPUT_DIR = "./output"
 
 # Einzelkarte: schmales Hochformat, 3 passen nebeneinander auf A4-Querformat.
-# A4 quer @ 300 dpi = 3508 x 2480 px, geteilt durch 3 -> Karte 1169 x 2480 px
-# (ca. 99 x 210 mm).
-COPIES_PER_SHEET = 3
+# A4 quer @ 300 dpi = 3508 x 2480 px, geteilt durch COPIES_PER_SHEET.
+# Bei 2 Karten -> je 1754 x 2480 px (ca. 148 x 210 mm = A5, gut lesbar).
+COPIES_PER_SHEET = 2
 SHEET_W = 3508   # A4 quer, Breite @ 300 dpi
 SHEET_H = 2480   # A4 quer, Höhe @ 300 dpi
-CARD_W = SHEET_W // COPIES_PER_SHEET   # 1169
+CARD_W = SHEET_W // COPIES_PER_SHEET
 CARD_H = SHEET_H
 
 SS = 2  # Supersampling-Faktor (Rendern in 2x, dann LANCZOS-Downscale)
 
-# Farben (exakt)
+# Schwarz-Weiß-Ausgabe für S/W-Drucker: weißer Hintergrund, Akzent in Schwarz
+# statt Orange (Band wird schwarz mit weißer Schrift). Auf False für Farbdruck.
+MONOCHROME = True
+
+# Farben (Farb-Variante)
 PAPER = (243, 240, 233)
 PAPER_DK = (233, 229, 220)
 INK = (26, 26, 24)
@@ -70,6 +74,13 @@ INK_SOFT = (74, 72, 68)
 ORANGE = (232, 93, 24)
 ORANGE_DK = (196, 74, 14)
 HAIRLINE = (200, 195, 185)
+
+if MONOCHROME:
+    PAPER = (255, 255, 255)      # reiner weißer Hintergrund (spart Toner)
+    PAPER_DK = (255, 255, 255)
+    ORANGE = (26, 26, 24)        # Akzent/Band -> Schwarz
+    ORANGE_DK = (26, 26, 24)
+    HAIRLINE = (150, 150, 150)   # etwas kräftiger, damit Linien sicher drucken
 
 FONT_FILES = {
     "shoulders_bold": "BigShoulders-Bold.ttf",
@@ -106,29 +117,29 @@ BAND_TRACKING = 0
 BAND_PAD_Y = 24
 GAP_BAND_BODY = 44
 
-BODY_DE_SIZE = 27
-BODY_FR_SIZE = 23
-BODY_LINE_GAP = 9
-GAP_BODY_DE_FR = 20
-GAP_BODY_HIGHLIGHT = 44
+BODY_DE_SIZE = 32
+BODY_FR_SIZE = 27
+BODY_LINE_GAP = 14
+GAP_BODY_DE_FR = 24
+GAP_BODY_HIGHLIGHT = 46
 
 HIGHLIGHT_PAD_X = 40
-HIGHLIGHT_PAD_Y = 32
-HIGHLIGHT_DAY_SIZE = 27
+HIGHLIGHT_PAD_Y = 34
+HIGHLIGHT_DAY_SIZE = 29
 HIGHLIGHT_DAY_TRACKING = 1.4
-HIGHLIGHT_DAYFR_SIZE = 20
-HIGHLIGHT_DETAIL_SIZE = 23
-HIGHLIGHT_DETAILFR_SIZE = 18
-HIGHLIGHT_LINE_GAP = 6
-HIGHLIGHT_ROW_GAP = 12
+HIGHLIGHT_DAYFR_SIZE = 21
+HIGHLIGHT_DETAIL_SIZE = 25
+HIGHLIGHT_DETAILFR_SIZE = 20
+HIGHLIGHT_LINE_GAP = 7
+HIGHLIGHT_ROW_GAP = 13
 TICK_W = 46
 TICK_H = 10
 BORDER_THICK = 2
 GAP_HIGHLIGHT_FOOTER = 46
 
-FOOTER_ADDR_SIZE = 20
-FOOTER_THANKS_SIZE = 17
-FOOTER_LINE_GAP = 10
+FOOTER_ADDR_SIZE = 22
+FOOTER_THANKS_SIZE = 19
+FOOTER_LINE_GAP = 12
 
 
 # ============================================================
@@ -410,8 +421,9 @@ def build_blocks(draw, ss_w, scale, ss, content_scale, gap_mult, font_paths):
         make_paragraph_block(BODY_DE, BODY_DE_SIZE, INK, GAP_BODY_DE_FR, font_paths["mono_regular"]),
         make_paragraph_block(BODY_FR, BODY_FR_SIZE, INK_SOFT, GAP_BODY_HIGHLIGHT, font_paths["mono_regular"]),
         make_highlight_block(HIGHLIGHT, GAP_HIGHLIGHT_FOOTER),
-        make_two_line_block(ADDRESS, FOOTER_ADDR_SIZE, INK_SOFT,
-                            f"{THANKS_DE} · {THANKS_FR}", FOOTER_THANKS_SIZE, INK_SOFT,
+        make_text_block(ADDRESS, font_paths["mono_regular"], FOOTER_ADDR_SIZE, 0, INK_SOFT, FOOTER_LINE_GAP),
+        make_two_line_block(THANKS_DE, FOOTER_THANKS_SIZE, INK_SOFT,
+                            THANKS_FR, FOOTER_THANKS_SIZE, INK_SOFT,
                             FOOTER_LINE_GAP, 0, font_paths["mono_regular"]),
     ]
     return blocks
