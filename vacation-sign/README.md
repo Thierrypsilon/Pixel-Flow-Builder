@@ -17,7 +17,9 @@ Zwei Skripte im selben Design wie die übrigen Schilder (`../door-sign/`,
    - `BigShoulders-Regular.ttf`
    - `GeistMono-Regular.ttf`
    - `GeistMono-Bold.ttf`
-2. Bike-Icon (weiß, transparenter Hintergrund) als PNG unter `assets/bike-icon.png` ablegen.
+2. Bike-Icon unter `assets/bike-icon.png` ablegen (weiß auf transparent). Entweder
+   dein eigenes PNG, oder das mitgelieferte, lizenzfreie Piktogramm erzeugen:
+   `python ../make_bike_icon.py assets/bike-icon.png`
 3. `pip install Pillow`
 4. `python make_vacation_sign.py` und/oder `python make_vacation_social.py`
 
