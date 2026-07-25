@@ -30,14 +30,14 @@ MESSAGE_HEADLINE_FR = "EN CONGÉS"
 # Eine Zeile pro Eintrag. Beliebig viele Einträge möglich.
 CLOSURE_ENTRIES = [
     {
-        "day_de": "FR. 7. — SO. 16. AUGUST 2026",
-        "day_fr": "Ven. 7 — dim. 16 août 2026",
+        "day_de": "FR. 7. — MO. 17. AUGUST 2026",
+        "day_fr": "Ven. 7 — lun. 17 août 2026",
         "detail_de": "Wir machen Jahresurlaub",
         "detail_fr": "Nous sommes en congés annuels",
     },
     {
-        "day_de": "AB MONTAG · 17. AUGUST 2026",
-        "day_fr": "À partir du lundi 17 août 2026",
+        "day_de": "AB DIENSTAG · 18. AUGUST 2026",
+        "day_fr": "À partir du mardi 18 août 2026",
         "detail_de": "Wieder wie gewohnt für Sie da",
         "detail_fr": "De nouveau à votre service",
     },

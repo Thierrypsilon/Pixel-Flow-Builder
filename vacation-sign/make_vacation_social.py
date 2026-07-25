@@ -31,16 +31,16 @@ MESSAGE_HEADLINE_FR = "EN CONGÉS"
 # Eine Zeile pro Eintrag. Beliebig viele Einträge möglich.
 CLOSURE_ENTRIES = [
     {
-        "day_de": "FR. 7. — SO. 16. AUGUST 2026",
-        "day_fr": "Ven. 7 — dim. 16 août 2026",
+        "day_de": "FR. 7. — MO. 17. AUGUST 2026",
+        "day_fr": "Ven. 7 — lun. 17 août 2026",
         "detail_de": "Geschäft im Jahresurlaub geschlossen",
         "detail_fr": "Magasin fermé pendant les congés annuels",
     },
 ]
 
 # Prominente Rückkehr-Botschaft (Werbung für Social Media)
-RETURN_DE = "Ab Montag 17. August 2026 wieder da"
-RETURN_FR = "De retour lundi 17 août 2026"
+RETURN_DE = "Ab Dienstag 18. August 2026 wieder da"
+RETURN_FR = "De retour mardi 18 août 2026"
 
 REASON_DE = "Reparaturen und Bestellungen nehmen wir danach gerne wieder an."
 REASON_FR = "Nous reprenons volontiers réparations et commandes à notre retour."
