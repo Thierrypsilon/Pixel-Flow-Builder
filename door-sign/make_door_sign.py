@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-make_door_sign.py — Türschild "GESCHLOSSEN" für Bikecenter Meyer, A4-druckfertig.
+make_door_sign.py — Türschild "AUSNAHMSWEISE GESCHLOSSEN" für Bikecenter Meyer,
+A4-druckfertig.
 
-Gleiche Design-Sprache wie die Social-Media-Grafiken (Papierweiß, Graphit-Tinte,
-Signal-Orange-Akzentband, Big-Shoulders-Headline, Mono-Detailtext), diesmal für
-zwei Schließtage: Montag halber Tag geschlossen + Dienstag Nationalfeiertag.
+Gleiche Design-Sprache wie die übrigen Schilder (weißer Hintergrund, Graphit-
+Tinte, Akzentband, Big-Shoulders-Headline, Mono-Detailtext), für einen einzelnen
+ausnahmsweisen Schließtag: Datum + Hinweis, ab wann wieder geöffnet ist.
 
 Ausführen:
     python make_door_sign.py
@@ -27,28 +28,23 @@ MARKER_TEXT = "— AUSNAHMSWEISE GESCHLOSSEN · FERMETURE EXCEPTIONNELLE —"
 MESSAGE_HEADLINE_DE = "GESCHLOSSEN"
 MESSAGE_HEADLINE_FR = "FERMÉ"
 
-# Eine Zeile pro Schließtag. Beliebig viele Einträge möglich.
+# Eine Zeile pro Eintrag. Beliebig viele Einträge möglich.
 CLOSURE_ENTRIES = [
     {
-        "day_de": "MONTAG · 20. JULI 2026",
-        "day_fr": "Lundi 20 juillet 2026",
-        "detail_de": "Nachmittags ab 12:00 Uhr geschlossen",
-        "detail_fr": "Fermé l'après-midi à partir de 12h00",
-    },
-    {
-        "day_de": "DIENSTAG · 21. JULI 2026",
-        "day_fr": "Mardi 21 juillet 2026",
-        "detail_de": "Nationalfeiertag · ganztägig geschlossen",
-        "detail_fr": "Jour férié national · fermé toute la journée",
+        "day_de": "MONTAG · 12. OKTOBER 2026",
+        "day_fr": "Lundi 12 octobre 2026",
+        "detail_de": "Ganztägig geschlossen",
+        "detail_fr": "Fermé toute la journée",
     },
 ]
 
-REASON_DE = "Wir verlängern den Nationalfeiertag um einen freien Nachmittag."
-REASON_FR = "Nous prolongeons le jour férié national d'un après-midi de congé."
+REASON_DE = "Ab Dienstag, 13. Oktober, sind wir wieder wie gewohnt für Sie da."
+REASON_FR = "Dès mardi 13 octobre, nous sommes de nouveau à votre service."
 
 THANKS_DE = "Danke für Ihr Verständnis"
 THANKS_FR = "Merci de votre compréhension"
 
+SHOW_ICON = False  # Fahrrad-Piktogramm anzeigen? (False = ohne Icon)
 BIKE_ICON_PATH = "./assets/bike-icon.png"
 FONT_DIR = "./fonts"
 OUTPUT_DIR = "./output"
@@ -59,7 +55,11 @@ PAGE_H = 3508
 
 SS = 2  # Supersampling-Faktor (Rendern in 2x, dann LANCZOS-Downscale)
 
-# Farben (exakt)
+# Schwarz-Weiß-Ausgabe für S/W-Drucker: weißer Hintergrund, Akzent in Schwarz
+# statt Orange (Band wird schwarz mit weißer Schrift). Auf False für Farbdruck.
+MONOCHROME = True
+
+# Farben (Farb-Variante)
 PAPER = (243, 240, 233)
 PAPER_DK = (233, 229, 220)
 INK = (26, 26, 24)
@@ -67,6 +67,13 @@ INK_SOFT = (74, 72, 68)
 ORANGE = (232, 93, 24)
 ORANGE_DK = (196, 74, 14)
 HAIRLINE = (200, 195, 185)
+
+if MONOCHROME:
+    PAPER = (255, 255, 255)      # reiner weißer Hintergrund (spart Toner)
+    PAPER_DK = (255, 255, 255)
+    ORANGE = (26, 26, 24)        # Akzent/Band -> Schwarz
+    ORANGE_DK = (26, 26, 24)
+    HAIRLINE = (150, 150, 150)   # etwas kräftiger, damit Linien sicher drucken
 
 FONT_FILES = {
     "shoulders_bold": "BigShoulders-Bold.ttf",
@@ -140,7 +147,7 @@ def check_assets():
         path = os.path.join(FONT_DIR, filename)
         if not os.path.isfile(path):
             missing.append(path)
-    if not os.path.isfile(BIKE_ICON_PATH):
+    if SHOW_ICON and not os.path.isfile(BIKE_ICON_PATH):
         missing.append(BIKE_ICON_PATH)
     if missing:
         listed = "\n".join(f"  - {p}" for p in missing)
@@ -419,11 +426,14 @@ def build_blocks(draw, canvas, ss_w, scale, ss, content_scale, gap_mult, font_pa
         make_schedule_block(CLOSURE_ENTRIES, GAP_SCHEDULE_REASON),
         make_two_line_block(REASON_DE, REASON_DE_SIZE, INK_SOFT, REASON_FR, REASON_FR_SIZE, INK_SOFT,
                              REASON_LINE_GAP, GAP_REASON_ICON, font_paths["mono_regular"]),
-        make_icon_block(GAP_ICON_FOOTER),
-        make_two_line_block(ADDRESS, FOOTER_ADDR_SIZE, INK_SOFT,
-                             f"{THANKS_DE} · {THANKS_FR}", FOOTER_THANKS_SIZE, INK_SOFT,
-                             FOOTER_LINE_GAP, 0, font_paths["mono_regular"]),
     ]
+    if SHOW_ICON:
+        blocks.append(make_icon_block(GAP_ICON_FOOTER))
+    blocks.append(
+        make_two_line_block(ADDRESS, FOOTER_ADDR_SIZE, INK_SOFT,
+                            f"{THANKS_DE} · {THANKS_FR}", FOOTER_THANKS_SIZE, INK_SOFT,
+                            FOOTER_LINE_GAP, 0, font_paths["mono_regular"])
+    )
     return blocks
 
 
@@ -497,7 +507,7 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     font_paths = {key: os.path.join(FONT_DIR, filename) for key, filename in FONT_FILES.items()}
-    bike_icon_master = load_bike_icon(BIKE_ICON_PATH, INK)
+    bike_icon_master = load_bike_icon(BIKE_ICON_PATH, INK) if SHOW_ICON else None
 
     img = render_door_sign(PAGE_W, PAGE_H, font_paths, bike_icon_master)
 
