@@ -53,6 +53,32 @@ const drawPreview: PreviewDrawFn = (() => {
 - SPA fallback: `dist/404.html` is a copy of `dist/index.html` (postbuild step in CI)
 - One-time manual step: enable Pages at `Settings → Pages → Source = "GitHub Actions"`. The workflow uses `actions/configure-pages@v4` with `enablement: true`, but the default `GITHUB_TOKEN` lacks the scope to actually flip the switch (the action returns "Resource not accessible by integration"). Once a human enables Pages, every subsequent workflow run is fully automatic.
 
+## Bikecenter Meyer print/social materials — wording rules
+
+The `door-sign/`, `vacation-sign/`, `service-tip/` and `social-closed/` folders
+hold Pillow scripts that generate customer-facing signs, handout cards and
+social-media graphics for the bike business (unrelated to the React SPA).
+
+All customer-facing copy — on signs, cards and in social-media post text —
+must follow these rules:
+
+**Primary language is German.** Sankt Vith is in the German-speaking Community
+of Belgium. French is an equal second language on every customer-facing piece,
+set below/smaller than the German line. Never German-only, never French-first.
+
+**Required wording for the business itself:**
+
+| Use | Avoid | Why |
+| --- | --- | --- |
+| „das Geschäft", „die Werkstatt" | „der Laden" | sounds unprofessional |
+| „das Geschäft", „die Werkstatt" | „der Shop" | anglicism, not proper German |
+
+French equivalents: „le magasin", „l'atelier".
+
+Keep the register professional but warm — this is a customer-facing small
+business, not internal chat. Ask before inventing a reason for a closure; state
+only facts the owner has given.
+
 ## Out of scope
 
 No backend, no database, no auth, no analytics, no PWA, no i18n, no custom domain (yet).
