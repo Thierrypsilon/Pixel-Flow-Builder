@@ -31,3 +31,8 @@ wählen, nicht „an Seite anpassen".
 `CLOSURE_ENTRIES` ist eine Liste — ein Eintrag pro Angebot, mit `day_de`/`day_fr`
 (Rabatt) und `detail_de`/`detail_fr` (worauf). Beliebig viele Einträge möglich.
 Zeitraum steht in `MESSAGE_HEADLINE_FR` (Orange-Band) und `REASON_DE`/`REASON_FR`.
+
+## Post-Texte
+
+Die fertigen Captions für Instagram und Facebook (DE/FR) stehen in
+[`post-texte.md`](post-texte.md) — inklusive Posting-Plan.
