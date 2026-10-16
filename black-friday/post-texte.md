@@ -97,13 +97,10 @@ Nur im Geschäft · En magasin
 
 ## 4. Letzter Tag (Samstagmorgen 28.)
 
-> Statt „bis Geschäftsschluss" besser die konkrete Uhrzeit einsetzen
-> (z. B. „heute noch bis 17 Uhr") — das wirkt verbindlicher.
-
 ```
 Letzter Tag! ⏰
 
-Heute noch bis Geschäftsschluss:
+Heute noch bis 16 Uhr:
 🚲  5 % Zusatzrabatt auf alle Fahrräder
 🔧  10 % Rabatt auf alle Zubehörartikel
 
@@ -113,7 +110,7 @@ Danach ist die Aktion vorbei — solange der Vorrat reicht.
 
 Dernier jour ! ⏰
 
-Aujourd'hui encore :
+Aujourd'hui jusqu'à 16h :
 🚲  5 % de remise supplémentaire sur tous les vélos
 🔧  10 % de remise sur tous les accessoires
 
